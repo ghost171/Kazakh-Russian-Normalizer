@@ -5,13 +5,16 @@ import torch.nn.functional as F
 import math, copy, time
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import numpy as np
+from  torch.utils.data import DataLoader
 import tensorflow_hub as hub
 import tensorflow as tf
 from numba import cuda
+import pandas as pd
 import bert
 from numba import cuda
 from bert import tokenization
-import sacrebleux
+import sacrebleu
+from torch.utils.data import Dataset
 
 def tokenize_kz_unnormalized(text):
     out = [tok for tok in ininormer.tokenize(text)]
@@ -47,13 +50,13 @@ def greedy_decode(model, src, src_mask, src_lengths, max_len=100, sos_index=1, e
         output.append(next_word)
         prev_y = torch.ones(1, 1).type_as(src).fill_(next_word)
         attention_scores.append(model.decoder.attention.alphas.cpu().numpy())
-
     output = np.array(output)
 
     if eos_index is not None:
         first_eos = np.where(output == eos_index)[0]
         if len(first_eos) > 0:
             output = output[:first_eos[0]]
+
 
     return output, np.concatenate(attention_scores, axis=1)
 
@@ -169,7 +172,6 @@ class Encoder(nn.Module):
         fwd_final = final[0:final.size(0):2]
         bwd_final = final[1:final.size(0):2]
         final = torch.cat([fwd_final, bwd_final], dim=2)
-
         return output, final
 
 def rebatch(pad_idx, batch):
@@ -359,11 +361,14 @@ def run_epoch(data_iter, model, loss_compute, print_every=50):
     print_tokens = 0
 
     for i, batch in enumerate(data_iter, 1):
+        print(batch)
+        print(batch.src)
 
         out, _, pre_output = model.forward(batch.src, batch.trg,
                                            batch.src_mask, batch.trg_mask,
                                            batch.src_lengths, batch.trg_lengths)
-
+        print(outt)
+        print(pre_output)
         loss = loss_compute(pre_output, batch.trg_y, batch.nseqs)
         total_loss += loss
         total_tokens += batch.ntokens
@@ -546,7 +551,80 @@ TRG = data.Field(tokenize=tokenize_kz_normalized, batch_first=True, lower=LOWER,
 
 MAX_LEN=25
 
-from torchtext.datasets import TranslationDataset
+
+class CustomTextDataset(Dataset):
+    def __init__(self, vocab, split_csv_path, text_dir):
+        self.vocab = vocab
+        self.info = pd.read_csv(split_csv_path)
+        self.text_dir = text_dir
+
+    def __len__(self):
+        return len(self.info)
+
+    def __getitem__(self, idx):
+        unnormalized_text = os.path.join(self.text_dir, self.info.iloc[idx, 0])
+        normalized_text = os.path.join(self.text_dir, self.info.iloc[idx, 1])
+
+        unnormalized_text = torch.from_numpy(np.array([self.vocab[token] for token in unnormalized_text]),
+                                             dtype=torch.int32)  # (1D)
+        normalized_text = torch.from_numpy(np.array([self.vocab[token] for token in normalized_text]),
+                                           dtype=torch.int32)  # chekp shape, it should be compatible with model input shape
+
+        # for model input I suppose [B, MAX_LEN_AMONG_BATCH] CHECK!
+        # for model output
+        return unnormalized_text, normalized_text
+
+
+class Collation():
+    def __init__(self, init_token, eos_token, pad_token):
+        self.init_token = init_token
+        self.eos_token = eos_token
+        self.pad_token = pad_token  # ids from vocab
+
+    def __call__(self, batch):
+        """
+        batch: list of size batch_size where each element is a tuple of unnormalized_text: torch.int32 and normalized_text: torch.int32].
+        """
+        input_lengths, ids_sorted_decreasing = torch.sort(
+            torch.LongTensor([x[0].size for x in batch]),  ## check .size !!! maybe len
+            dim=0, descending=True)
+        max_input_len = input_lengths[0]
+
+        unnormalized_text_padded = torch.LongTensor(len(batch),
+                                                    max_input_len)  # depends on model input data type, CHECK!!!
+        unnormalized_text_padded.zero_()  # FILL WITH PAD_TOKEN ID
+
+        # IF NEEDED PREPEND AND APPEND CORRESPONDING init_token and eos_token OR DO IT IN __get_item__()
+        for i in range(len(ids_sorted_decreasing)):
+            text = batch[ids_sorted_decreasing[i]][0]
+            unnormalized_text_padded[i, :text.size(0)] = text
+
+        output_lengths, _ = torch.sort(torch.LongTensor([len(x[1]) for x in batch]), dim=0, descending=True)
+        max_output_len = output_lengths[0]
+
+        normalized_text_padded = torch.LongTensor(len(batch), max_input_len)
+        normalized_text_padded.zero_()
+
+        for i in range(len(ids_sorted_decreasing)):
+            text = batch[ids_sorted_decreasing[i]][1]
+            normalized_text_padded[i, :text.size(0)] = text
+
+        return (unnormalized_text_padded, normalized_text_padded)
+
+
+print("VOCAB_FILE", vocab_file)
+src_dataset = CustomTextDataset(vocab_file, 'train.ut', './')
+trg_dataset = CustomTextDataset(vocab_file, 'train.nt', './')
+
+collate_fn = Collation(vocab['<pad>'], vocab['<pad>'], vocab['<pad>'])
+
+
+src_dataloader = DataLoader(src_dataset, batch_size=5, collate_fn=collate_fn)
+trg_dataloader = DataLoader(trg_dataset, batch_size=5, collate_fn=collate_fn)
+
+
+
+'''from torchtext.datasets import TranslationDataset
 
 text_dataset = TranslationDataset(path='./', exts=('train.ut', 'train.nt'), fields=(SRC, TRG))
 
@@ -618,7 +696,7 @@ pred = hypotheses[idx].split() + ["</s>"]
 pred_att = alphas[idx][0].T[:, :len(pred)]
 print("src", src)
 print("ref", trg)
-print("pred", pred)
+print("pred", pred)'''
 
 
 

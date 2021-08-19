@@ -8,7 +8,7 @@ import math
 import numpy as np
 from torch.utils.data import Dataset
 from collections import Counter
-from torchtext.vocab import Vocab
+import pandas as pd
 
 USE_CUDA=1
 

@@ -1,6 +1,7 @@
 from torch.utils.data import Dataset
 from collections import Counter
 from torchtext.vocab import Vocab
+import pandas as pd
 
 class CustomTextDataset(Dataset):
     def __init__(self, vocab, split_csv_path, text_dir):

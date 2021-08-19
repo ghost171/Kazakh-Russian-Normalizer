@@ -3,11 +3,13 @@ import torch.nn as nn
 import math, copy, time
 import numpy as np
 from  torch.utils.data import DataLoader
+from collections import Counter
 import tensorflow_hub as hub
 import tensorflow as tf
 from numba import cuda
 import pandas as pd
 import bert
+from torchtext.vocab import Vocab
 from numba import cuda
 from torchtext import data
 from bert import tokenization
@@ -17,31 +19,7 @@ from model import   greedy_decode,  lookup_words, print_examples, EncoderDecoder
 from model import   BahdanauAttention, Batch, run_epoch, SimpleLossCompute, train, print_data_info, Generator
 from model import make_model
 from Dataset import Collation, CustomTextDataset
-
-def get_model(model_url, max_seq_length):
-    with tf.device('/cpu:0'):
-        labse_layer = hub.KerasLayer(model_url, trainable=False)
-
-      # Define input.
-        input_word_ids = tf.keras.layers.Input(shape=(max_seq_length,), dtype=tf.int32,
-                                             name="input_word_ids")
-        input_mask = tf.keras.layers.Input(shape=(max_seq_length,), dtype=tf.int32,
-                                     name="input_mask")
-        segment_ids = tf.keras.layers.Input(shape=(max_seq_length,), dtype=tf.int32,
-                                          name="segment_ids")
-
-      # LaBSE layer.
-        pooled_output,  _ = labse_layer([input_word_ids, input_mask, segment_ids])
-
-      # The embedding is l2 normalized.
-        pooled_output = tf.keras.layers.Lambda(
-        lambda x: tf.nn.l2_normalize(x, axis=1))(pooled_output)
-
-      # Define model.
-        labse_model = tf.keras.Model(
-        inputs=[input_word_ids, input_mask, segment_ids],
-        outputs=pooled_output)
-    return labse_model, labse_layer
+from get_model_for_tokenization import get_model
 
 def tokenize_kz_unnormalized(text):
     out = [tok for tok in ininormer.tokenize(text)]
@@ -78,13 +56,6 @@ with tf.device('/cpu:0'):
 
 
 import tensorflow as tf
-
-'''def build_vocab(filepath, tokenizer):
-  counter = Counter()
-  with io.open(filepath, encoding="utf8") as f:
-        for string_ in f:
-            counter.update(tokenizer(string_))
-    return build_vocab_from_iterator(counter, specials=['<unk>', '<pad>', '<bos>', '<eos>'])'''
 
 UNK_TOKEN = "<unk>"
 PAD_TOKEN = "<pad>"
@@ -130,7 +101,7 @@ trg_dataset = CustomTextDataset(vocab_file, 'train.nt', './')
 
 
 
-from torchtext.datasets import TranslationDataset
+'''from torchtext.datasets import TranslationDataset
 
 text_dataset = TranslationDataset(path='./', exts=('train.ut', 'train.nt'), fields=(SRC, TRG))
 
@@ -202,7 +173,7 @@ pred = hypotheses[idx].split() + ["</s>"]
 pred_att = alphas[idx][0].T[:, :len(pred)]
 print("src", src)
 print("ref", trg)
-print("pred", pred)
+print("pred", pred)'''
 
 
 

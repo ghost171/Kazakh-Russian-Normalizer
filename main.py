@@ -12,9 +12,13 @@ from numba import cuda
 import pandas as pd
 import bert
 from numba import cuda
+from torchtext import data
 from bert import tokenization
 import sacrebleu
 from torch.utils.data import Dataset
+from collections import Counter
+from torchtext.vocab import Vocab
+import io
 
 def tokenize_kz_unnormalized(text):
     out = [tok for tok in ininormer.tokenize(text)]
@@ -361,14 +365,16 @@ def run_epoch(data_iter, model, loss_compute, print_every=50):
     print_tokens = 0
 
     for i, batch in enumerate(data_iter, 1):
-        print(batch)
-        print(batch.src)
-
+        print("BTACH", batch.src_lengths)
+        print("SRC", batch.src_lengths)
+        print("SRC",batch.src.size())
+        print("SRC", batch.trg.size())
         out, _, pre_output = model.forward(batch.src, batch.trg,
                                            batch.src_mask, batch.trg_mask,
                                            batch.src_lengths, batch.trg_lengths)
-        print(outt)
-        print(pre_output)
+        print("OUT", out.size())
+        print("PRE OUTPUT", pre_output.size())
+
         loss = loss_compute(pre_output, batch.trg_y, batch.nseqs)
         total_loss += loss
         total_tokens += batch.ntokens
@@ -543,8 +549,6 @@ LOWER = True
 
 ininormer = tokenizer
 
-from torchtext import data
-
 SRC = data.Field(tokenize=tokenize_kz_unnormalized, batch_first=True, lower=LOWER, include_lengths=True, unk_token=UNK_TOKEN, pad_token=PAD_TOKEN, init_token=None, eos_token=EOS_TOKEN)
 
 TRG = data.Field(tokenize=tokenize_kz_normalized, batch_first=True, lower=LOWER, include_lengths=True, unk_token=UNK_TOKEN, pad_token=PAD_TOKEN, init_token=SOS_TOKEN, eos_token=EOS_TOKEN)
@@ -569,9 +573,8 @@ class CustomTextDataset(Dataset):
                                              dtype=torch.int32)  # (1D)
         normalized_text = torch.from_numpy(np.array([self.vocab[token] for token in normalized_text]),
                                            dtype=torch.int32)  # chekp shape, it should be compatible with model input shape
-
-        # for model input I suppose [B, MAX_LEN_AMONG_BATCH] CHECK!
-        # for model output
+        # for model input I suppose [B, MAX_LEN_AMONG_BATCH] CHECK SRC torch.Size([1, 15])!
+        # for model output ([1, 15, 256])
         return unnormalized_text, normalized_text
 
 
@@ -605,11 +608,30 @@ class Collation():
         normalized_text_padded = torch.LongTensor(len(batch), max_input_len)
         normalized_text_padded.zero_()
 
+
         for i in range(len(ids_sorted_decreasing)):
             text = batch[ids_sorted_decreasing[i]][1]
             normalized_text_padded[i, :text.size(0)] = text
 
         return (unnormalized_text_padded, normalized_text_padded)
+
+
+def build_vocab(filepath, tokenizer):
+    counter = Counter()
+    with io.open(filepath, encoding="utf8") as f:
+        for string_ in f:
+            counter.update(tokenizer.tokenize(string_))
+    return Vocab(counter, specials=['<unk>', '<pad>', '<bos>', '<eos>'])
+
+vocab = build_vocab('train.ut', ininormer)
+
+def save_vocab(vocab, path):
+    import pickle
+    output = open(path, 'wb')
+    pickle.dump(vocab, output)
+    output.close()
+
+save_vocab(vocab, 'output.txt')
 
 
 print("VOCAB_FILE", vocab_file)
@@ -620,7 +642,7 @@ collate_fn = Collation(vocab['<pad>'], vocab['<pad>'], vocab['<pad>'])
 
 
 src_dataloader = DataLoader(src_dataset, batch_size=5, collate_fn=collate_fn)
-trg_dataloader = DataLoader(trg_dataset, batch_size=5, collate_fn=collate_fn)
+'''trg_dataloader = DataLoader(trg_dataset, batch_size=5, collate_fn=collate_fn)'''
 
 
 

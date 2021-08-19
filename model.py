@@ -38,7 +38,11 @@ def greedy_decode(model, src, src_mask, src_lengths, max_len=100, sos_index=1, e
         output.append(next_word)
         prev_y = torch.ones(1, 1).type_as(src).fill_(next_word)
         attention_scores.append(model.decoder.attention.alphas.cpu().numpy())
+    print("_____________________________________________Greedy_decode_________________________________________")
+    print("TYPE", type(output))
+    print("output", output)
     output = np.array(output)
+    print("_____________________________________________Greedy_decode_________________________________________")
 
     if eos_index is not None:
         first_eos = np.where(output == eos_index)[0]

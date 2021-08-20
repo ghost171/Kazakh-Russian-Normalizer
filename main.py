@@ -16,6 +16,7 @@ from model import make_model
 from dataset_functions import Collation, CustomTextDataset
 from get_model_for_tokenization import get_model
 from tokenizer_functions import  tokenize_kz_normalized, tokenize_kz_unnormalized
+from build_vocab_for_model import build_vocab
 
 # we will use CUDA if it is available
 USE_CUDA = torch.cuda.is_available()
@@ -52,23 +53,14 @@ LOWER = True
 
 ininormer = tokenizer
 
-SRC = data.Field(tokenize=tokenize_kz_unnormalized, batch_first=True, lower=LOWER, include_lengths=True, unk_token=UNK_TOKEN, pad_token=PAD_TOKEN, init_token=None, eos_token=EOS_TOKEN)
+UNNORMALIZED = data.Field(tokenize=tokenize_kz_unnormalized, batch_first=True, lower=LOWER, include_lengths=True, unk_token=UNK_TOKEN, pad_token=PAD_TOKEN, init_token=None, eos_token=EOS_TOKEN)
 
-TRG = data.Field(tokenize=tokenize_kz_normalized, batch_first=True, lower=LOWER, include_lengths=True, unk_token=UNK_TOKEN, pad_token=PAD_TOKEN, init_token=SOS_TOKEN, eos_token=EOS_TOKEN)
+NORMALIZED = data.Field(tokenize=tokenize_kz_normalized, batch_first=True, lower=LOWER, include_lengths=True, unk_token=UNK_TOKEN, pad_token=PAD_TOKEN, init_token=SOS_TOKEN, eos_token=EOS_TOKEN)
 
 MAX_LEN=25
 
-def build_vocab(filepath, tokenizer, data_folder, ext):
-    counter = Counter()
-    with io.open(filepath, encoding="utf8") as f:
-        for i, string_ in enumerate(f):
-            name = "sample_" + str("%10.7o"% i) + '.' + ext
-            with open(data_folder + name, 'w') as f:
-                f.write(string_)
-            counter.update(tokenizer.tokenize(string_))
-    return counter
-
-vocab = build_vocab('./data/train.ut', ininormer, '/home/ghost/Annotated_2/Scriptur_task/unnormalized/', 'ut')
+vocab_unnormalized = build_vocab('./data/train.ut', ininormer, '/home/ghost/Annotated_2/Scriptur_task/unnormalized/', 'ut')
+vocab_normalized = build_vocab('./data/train.nt', ininormer, '/home/ghost/Annotated_2/Scriptur_task/normalized/', 'nt')
 
 def save_vocab(vocab, path):
     import pickle
@@ -77,13 +69,13 @@ def save_vocab(vocab, path):
     output.close()
 
 
-print("VOCAB_FILE", vocab_file)
-src_dataset = CustomTextDataset(vocab, 'train.ut', './data/')
-trg_dataset = CustomTextDataset(vocab, 'train.nt', './data/')
+#print("VOCAB_FILE", vocab_file)
+#src_dataset = CustomTextDataset(vocab, 'train.ut', './data/')
+#trg_dataset = CustomTextDataset(vocab, 'train.nt', './data/')
 
-df = pd.DataFrame.from_dict(vocab, orient='index').reset_index()
-compression_opts = dict(method='zip', archive_name='vocab.csv')
-df.to_csv('vocab_unnormalized/vocab.zip', index=False, compression=compression_opts)
+#df = pd.DataFrame.from_dict(vocab, orient='index').reset_index()
+#compression_opts = dict(method='zip', archive_name='vocab.csv')
+#df.to_csv('vocab_unnormalized/vocab.zip', index=False, compression=compression_opts)
 
 #collate_fn = Collation(vocab['<pad>'], vocab['<pad>'], vocab['<pad>'])
 
@@ -93,9 +85,9 @@ df.to_csv('vocab_unnormalized/vocab.zip', index=False, compression=compression_o
 
 
 
-'''from torchtext.datasets import TranslationDataset
+from torchtext.datasets import TranslationDataset
 
-text_dataset = TranslationDataset(path='./', exts=('train.ut', 'train.nt'), fields=(SRC, TRG))
+text_dataset = TranslationDataset(path='./data/', exts=('train.ut', 'train.nt'), fields=(UNNORMALIZED, NORMALIZED))
 
 from torchtext import data, datasets
 
@@ -107,23 +99,23 @@ if True:
     LOWER = True
 
     # we include lengths to provide to the RNNs
-    SRC = data.Field(tokenize=tokenize_kz_unnormalized,
+    UNNORMALIZED = data.Field(tokenize=tokenize_kz_unnormalized,
                      batch_first=True, lower=LOWER, include_lengths=True,
                      unk_token=UNK_TOKEN, pad_token=PAD_TOKEN, init_token=None, eos_token=EOS_TOKEN)
 
-    TRG = data.Field(tokenize=tokenize_kz_normalized,
+    NORMALIZED = data.Field(tokenize=tokenize_kz_normalized,
                      batch_first=True, lower=LOWER, include_lengths=True,
                      unk_token=UNK_TOKEN, pad_token=PAD_TOKEN, init_token=SOS_TOKEN, eos_token=EOS_TOKEN)
 
     MAX_LEN = 25  # NOTE: we filter out a lot of sentences for speed
-    train_data, valid_data, test_data = text_dataset.splits(path='./', exts=('.ut', '.nt'), fields=(SRC, TRG), filter_pred=lambda x: len(vars(x)['src']) <= MAX_LEN and len(vars(x)['trg']) <= MAX_LEN)
+    train_data, valid_data, test_data = text_dataset.splits(path='./data/', exts=('.ut', '.nt'), fields=(UNNORMALIZED, NORMALIZED), filter_pred=lambda x: len(vars(x)['src']) <= MAX_LEN and len(vars(x)['trg']) <= MAX_LEN)
     MIN_FREQ = 5  # NOTE: we limit the vocabulary to frequent words for speed
-    SRC.build_vocab(text_dataset.src, min_freq=MIN_FREQ)
-    TRG.build_vocab(text_dataset.trg, min_freq=MIN_FREQ)
+    UNNORMALIZED.build_vocab(text_dataset.src, min_freq=MIN_FREQ)
+    NORMALIZED.build_vocab(text_dataset.trg, min_freq=MIN_FREQ)
 
-    PAD_INDEX = TRG.vocab.stoi[PAD_TOKEN]
+    PAD_INDEX = NORMALIZED.vocab.stoi[PAD_TOKEN]
 
-print_data_info(train_data, SRC, TRG)
+print_data_info(train_data, UNNORMALIZED, NORMALIZED)
 
 train_iter = data.BucketIterator(train_data, batch_size=1, train=True, sort_within_batch=True,
                                  sort_key=lambda x: (len(x.src), len(x.trg)), repeat=False,
@@ -136,11 +128,11 @@ device.reset()
 valid_iter = data.Iterator(valid_data, batch_size=1, train=False, sort=False, repeat=False,
                            device=DEVICE)
 
-model = make_model(len(SRC.vocab), len(TRG.vocab),
+model = make_model(len(UNNORMALIZED.vocab), len(NORMALIZED.vocab),
                    emb_size=256, hidden_size=256,
                    num_layers=1, dropout=0.2)
 
-dev_perplexities = train(model, PAD_INDEX, train_iter, valid_iter, SRC, TRG, print_every=10)
+dev_perplexities = train(model, PAD_INDEX, train_iter, valid_iter, UNNORMALIZED, NORMALIZED, print_every=10)
 
 hypotheses = []
 alphas = []
@@ -148,8 +140,8 @@ for batch in valid_iter:
     batch = rebatch(PAD_INDEX, batch)
     pred, attention = greedy_decode(
     model, batch.src, batch.src_mask, batch.src_lengths, max_len=25,
-        sos_index=TRG.vocab.stoi[SOS_TOKEN],
-        eos_index=TRG.vocab.stoi[EOS_TOKEN])
+        sos_index=NORMALIZED.vocab.stoi[SOS_TOKEN],
+        eos_index=NORMALIZED.vocab.stoi[EOS_TOKEN])
     hypotheses.append(pred)
     alphas.append(attention)
 
@@ -165,7 +157,7 @@ pred = hypotheses[idx].split() + ["</s>"]
 pred_att = alphas[idx][0].T[:, :len(pred)]
 print("src", src)
 print("ref", trg)
-print("pred", pred)'''
+print("pred", pred)
 
 
 

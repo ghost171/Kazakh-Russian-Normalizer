@@ -1,0 +1,47 @@
+example of src and trg input:
+
+TYPE <class 'torch.Tensor'>
+SRC tensor([[ 0,  3, 86,  0, 80, 56,  2]], device='cuda:0')
+SIZE torch.Size([1, 7])
+
+TYPE <class 'torch.Tensor'>
+TRG tensor([[  2,   0,   4, 105,   0, 100,  73]], device='cuda:0')
+SIZE torch.Size([1, 7])
+
+input is an embedding of words from src and trg(unnormalized and normalized texts)
+
+
+
+example of src_lengths:
+
+TYPE <class 'torch.Tensor'>
+SRC_LENGTHS tensor([7], device='cuda:0')
+
+lengths of current batch
+
+
+pre_output:
+TYPE <class 'torch.Tensor'>
+PRE_OUTPUT tensor([[[ 0.8326,  1.5128, -2.6410,  ...,  0.1377,  0.6127, -2.0689],
+         [-2.6739, -2.3691, -2.2258,  ..., -0.6107,  2.1970,  3.3231],
+         [-0.7371, -0.2581,  0.5262,  ...,  0.7291,  1.2849,  2.4664],
+         ...,
+         [ 4.1135, -1.1691,  1.6224,  ..., -1.4503, -0.2757, -1.7880],
+         [ 2.0424, -0.1896,  0.7465,  ...,  1.6832, -1.4070, -2.3298],
+         [ 1.5432, -2.1072,  0.9492,  ...,  1.6614, -1.4226, -0.0875]]],
+       device='cuda:0')
+SIZE torch.Size([1, 1, 7])
+
+
+It's variables from model architecture after forward() function.
+
+
+-----------------------------------------------------------
+example of src_mask:
+TYPE <class 'torch.Tensor'>
+SRC_MASK tensor([[[True, True, True, True, True, True, True, True, True, True, True,
+          True, True]]], device='cuda:0')
+SIZE torch.Size([1, 1, 13])
+
+mask consisting of all True elements with appropriate size
+

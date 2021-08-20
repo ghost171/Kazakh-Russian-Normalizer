@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import time
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
-#import torch.nn.functional as F
+import torch.nn.functional as F
 import math
 import numpy as np
 
@@ -34,12 +34,15 @@ def greedy_decode(model, src, src_mask, src_lengths, max_len=100, sos_index=1, e
         output.append(next_word)
         prev_y = torch.ones(1, 1).type_as(src).fill_(next_word)
         attention_scores.append(model.decoder.attention.alphas.cpu().numpy())
+
+    print()
     print("_____________________________________________Greedy_decode_________________________________________")
     print("TYPE", type(output))
-    print("output", output)
+    print("OUTPUT", output)
     output = np.array(output)
+    print("SIZE", len(output))
     print("_____________________________________________Greedy_decode_________________________________________")
-
+    print()
     if eos_index is not None:
         first_eos = np.where(output == eos_index)[0]
         if len(first_eos) > 0:
@@ -152,6 +155,14 @@ class Encoder(nn.Module):
         packed = pack_padded_sequence(x, lengths, batch_first=True)
         output, final = self.rnn(packed)
         output, _ = pad_packed_sequence(output, batch_first=True)
+
+        print()
+        print("_____________________________________________OUTPUT_OF_FORWARD_ENCODER_________________________________________")
+        print("TYPE", type(output))
+        print("OUTPUT", output)
+        print("SIZE", output.size())
+        print("_____________________________________________OUTPUT_OF_FORWARD_ENCODER_________________________________________")
+        print()
 
         # we need to manually concatenate the final states for both directions
         fwd_final = final[0:final.size(0):2]
@@ -341,16 +352,64 @@ def run_epoch(data_iter, model, loss_compute, print_every=50):
     total_loss = 0
     print_tokens = 0
 
+
     for i, batch in enumerate(data_iter, 1):
-        print("BTACH", batch.src_lengths)
-        print("SRC", batch.src_lengths)
-        print("SRC",batch.src.size())
-        print("SRC", batch.trg.size())
+
+        print()
+        print("_____________________________________________SRC_OF_RUN_EPOCh_________________________________________")
+        print("TYPE", type(batch.src))
+        print("SRC", batch.src)
+        print("SIZE", batch.src.size())
+        print("_____________________________________________SRC_OF_RUN_EPOCh_________________________________________")
+        print()
+
+        print()
+        print("_____________________________________________TRG_OF_RUN_EPOCh_________________________________________")
+        print("TYPE", type(batch.trg))
+        print("TRG", batch.trg)
+        print("SIZE", batch.trg.size())
+        print("_____________________________________________TRg_OF_RUN_EPOCh_________________________________________")
+        print()
+
+        print()
+        print("_____________________________________________SRC_MASK_OF_RUN_EPOCh_________________________________________")
+        print("TYPE", type(batch.src_mask))
+        print("SRC_MASK", batch.src_mask)
+        print("SIZE", batch.src_mask.size())
+        print("_____________________________________________SRC_MASK_OF_RUN_EPOCh_________________________________________")
+        print()
+
+        print()
+        print("_____________________________________________SRC_LENGTHS_OF_RUN_EPOCh_________________________________________")
+        print("TYPE", type(batch.src_lengths))
+        print("SRC_LENGTHS", batch.src_lengths)
+        #print("SIZE", batch.src_mask.size)
+        print("_____________________________________________SRC_LENGTHS_OF_RUN_EPOCh_________________________________________")
+        print()
+
         out, _, pre_output = model.forward(batch.src, batch.trg,
                                            batch.src_mask, batch.trg_mask,
                                            batch.src_lengths, batch.trg_lengths)
-        print("OUT", out.size())
-        print("PRE OUTPUT", pre_output.size())
+
+        print()
+        print(
+            "_____________________________________________OUT_OF_RUN_EPOCh_________________________________________")
+        print("TYPE", type(out))
+        print("OUT", out)
+        print("SIZE", batch.src_mask.size())
+        print(
+            "_____________________________________________SRC_LENGTHS_OF_RUN_EPOCh_________________________________________")
+        print()
+
+        print()
+        print(
+            "_____________________________________________OUT_OF_RUN_EPOCh_________________________________________")
+        print("TYPE", type(out))
+        print("PRE_OUTPUT", pre_output)
+        print("SIZE", batch.src_mask.size())
+        print(
+            "_____________________________________________SRC_LENGTHS_OF_RUN_EPOCh_________________________________________")
+        print()
 
         loss = loss_compute(pre_output, batch.trg_y, batch.nseqs)
         total_loss += loss

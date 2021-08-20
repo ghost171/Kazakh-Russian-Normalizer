@@ -1,2 +1,7 @@
 /env
 /.idea
+/__pychache__
+/all_texts
+out_final.csv
+/all_texts_csv
+

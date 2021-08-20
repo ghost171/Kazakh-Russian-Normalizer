@@ -1,0 +1,6 @@
+August 20
+delete excess libs
+filelist.csv
+save texts in appropriate files
+vocabulary creation and save it to json
+input, output sizes

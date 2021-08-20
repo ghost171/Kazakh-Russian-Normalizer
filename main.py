@@ -1,33 +1,21 @@
-import torch
-import torch.nn as nn
-import math, copy, time
 import numpy as np
+import torch
 from  torch.utils.data import DataLoader
 from collections import Counter
-import tensorflow_hub as hub
 import tensorflow as tf
 from numba import cuda
 import pandas as pd
 import bert
-from torchtext.vocab import Vocab
-from numba import cuda
-from torchtext import data
 from bert import tokenization
-import sacrebleu
+from torchtext.vocab import Vocab
+from torchtext import data
 import io
 from model import   greedy_decode,  lookup_words, print_examples, EncoderDecoder, Encoder, rebatch, Decoder
 from model import   BahdanauAttention, Batch, run_epoch, SimpleLossCompute, train, print_data_info, Generator
 from model import make_model
-from Dataset import Collation, CustomTextDataset
+from dataset_functions import Collation, CustomTextDataset
 from get_model_for_tokenization import get_model
-
-def tokenize_kz_unnormalized(text):
-    out = [tok for tok in ininormer.tokenize(text)]
-    return out
-
-def tokenize_kz_normalized(text):
-    out = [tok for tok in ininormer.tokenize(text)]
-    return out
+from tokenizer_functions import  tokenize_kz_normalized, tokenize_kz_unnormalized
 
 # we will use CUDA if it is available
 USE_CUDA = torch.cuda.is_available()
@@ -48,14 +36,13 @@ device.reset()
 
 vocab_file = labse_layer.resolved_object.vocab_file.asset_path.numpy()
 
-import tensorflow.compat.v1 as tf
+#import tensorflow.compat.v1 as tf
 
 with tf.device('/cpu:0'):
     do_lower_case = labse_layer.resolved_object.do_lower_case.numpy()
     tokenizer = bert.tokenization.FullTokenizer(vocab_file, do_lower_case)
 
-
-import tensorflow as tf
+#import tensorflow as tf
 
 UNK_TOKEN = "<unk>"
 PAD_TOKEN = "<pad>"
@@ -71,14 +58,17 @@ TRG = data.Field(tokenize=tokenize_kz_normalized, batch_first=True, lower=LOWER,
 
 MAX_LEN=25
 
-def build_vocab(filepath, tokenizer):
+def build_vocab(filepath, tokenizer, data_folder, ext):
     counter = Counter()
     with io.open(filepath, encoding="utf8") as f:
-        for string_ in f:
+        for i, string_ in enumerate(f):
+            name = "sample_" + str("%10.7o"% i) + '.' + ext
+            with open(data_folder + name, 'w') as f:
+                f.write(string_)
             counter.update(tokenizer.tokenize(string_))
-    return Vocab(counter, specials=['<unk>', '<pad>', '<bos>', '<eos>'])
+    return counter
 
-vocab = build_vocab('train.ut', ininormer)
+vocab = build_vocab('./data/train.ut', ininormer, '/home/ghost/Annotated_2/Scriptur_task/unnormalized/', 'ut')
 
 def save_vocab(vocab, path):
     import pickle
@@ -86,12 +76,14 @@ def save_vocab(vocab, path):
     pickle.dump(vocab, output)
     output.close()
 
-save_vocab(vocab, 'output.txt')
-
 
 print("VOCAB_FILE", vocab_file)
-src_dataset = CustomTextDataset(vocab_file, 'train.ut', './')
-trg_dataset = CustomTextDataset(vocab_file, 'train.nt', './')
+src_dataset = CustomTextDataset(vocab, 'train.ut', './data/')
+trg_dataset = CustomTextDataset(vocab, 'train.nt', './data/')
+
+df = pd.DataFrame.from_dict(vocab, orient='index').reset_index()
+compression_opts = dict(method='zip', archive_name='vocab.csv')
+df.to_csv('vocab_unnormalized/vocab.zip', index=False, compression=compression_opts)
 
 #collate_fn = Collation(vocab['<pad>'], vocab['<pad>'], vocab['<pad>'])
 

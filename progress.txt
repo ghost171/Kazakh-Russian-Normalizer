@@ -1,6 +1,27 @@
 August 20
+<<<<<<< HEAD
+=======
+
+>>>>>>> vocab and line by line
 delete excess libs
 filelist.csv
 save texts in appropriate files
 vocabulary creation and save it to json
 input, output sizes
+<<<<<<< HEAD
+=======
+
+August 21
+
+preprocessing in one folder
+build_vocab in another program
+save vocab as hash table
+line by line record in file(construct 1 file with all texts)
+README(optionally)
+delete indeces in data
+create data tokenized(normalized and unnormalized) and row(normalized and unnormalized)
+change to_csv to for loop.
+vocabulary as json
+
+
+>>>>>>> vocab and line by line

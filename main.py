@@ -29,7 +29,7 @@ np.random.seed(seed)
 torch.manual_seed(seed)
 torch.cuda.manual_seed(seed)
 
-max_seq_length = 10
+'''max_seq_length = 10
 labse_model, labse_layer = get_model(model_url="https://tfhub.dev/google/LaBSE/1", max_seq_length=max_seq_length)
 
 device = cuda.get_current_device()
@@ -37,14 +37,20 @@ device.reset()
 
 vocab_file = labse_layer.resolved_object.vocab_file.asset_path.numpy()
 
+<<<<<<< HEAD
 #import tensorflow.compat.v1 as tf
 
+=======
+>>>>>>> vocab and line by line
 with tf.device('/cpu:0'):
     do_lower_case = labse_layer.resolved_object.do_lower_case.numpy()
     tokenizer = bert.tokenization.FullTokenizer(vocab_file, do_lower_case)
 
+<<<<<<< HEAD
 #import tensorflow as tf
 
+=======
+>>>>>>> vocab and line by line
 UNK_TOKEN = "<unk>"
 PAD_TOKEN = "<pad>"
 SOS_TOKEN = "<s>"
@@ -60,6 +66,7 @@ NORMALIZED = data.Field(tokenize=tokenize_kz_normalized, batch_first=True, lower
 MAX_LEN=25
 
 vocab_unnormalized = build_vocab('./data/train.ut', ininormer, '/home/ghost/Annotated_2/Scriptur_task/unnormalized/', 'ut')
+<<<<<<< HEAD
 vocab_normalized = build_vocab('./data/train.nt', ininormer, '/home/ghost/Annotated_2/Scriptur_task/normalized/', 'nt')
 
 def save_vocab(vocab, path):
@@ -72,6 +79,23 @@ def save_vocab(vocab, path):
 #print("VOCAB_FILE", vocab_file)
 #src_dataset = CustomTextDataset(vocab, 'train.ut', './data/')
 #trg_dataset = CustomTextDataset(vocab, 'train.nt', './data/')
+=======
+vocab_normalized = build_vocab('./data/train.nt', ininormer, '/home/ghost/Annotated_2/Scriptur_task/normalized/', 'nt')'''
+
+
+def load_vocab(path):
+    vocab = dict()
+    with io.open(filepath, encoding="utf8") as f:
+        for i, string_ in enumerate(f):
+            vocab[i] = string_
+    return vocab
+
+vocab_unnormalized = load_vocab('vocab_unnormalized/unnormalized_vocab.csv')
+
+
+#print("VOCAB_FILE", vocab_file)
+src_dataset = CustomTextDataset(vocab, 'train.ut', './data/')
+trg_dataset = CustomTextDataset(vocab, 'train.nt', './data/')
 
 #df = pd.DataFrame.from_dict(vocab, orient='index').reset_index()
 #compression_opts = dict(method='zip', archive_name='vocab.csv')
@@ -85,7 +109,11 @@ def save_vocab(vocab, path):
 
 
 
+
 from torchtext.datasets import TranslationDataset
+
+'''from torchtext.datasets import TranslationDataset
+>>>>>>> vocab and line by line
 
 text_dataset = TranslationDataset(path='./data/', exts=('train.ut', 'train.nt'), fields=(UNNORMALIZED, NORMALIZED))
 
@@ -157,7 +185,7 @@ pred = hypotheses[idx].split() + ["</s>"]
 pred_att = alphas[idx][0].T[:, :len(pred)]
 print("src", src)
 print("ref", trg)
-print("pred", pred)
+print("pred", pred)'''
 
 
 

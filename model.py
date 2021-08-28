@@ -487,7 +487,7 @@ def make_model(src_vocab, tgt_vocab, emb_size=256, hidden_size=512, num_layers=1
 
     return model.cuda() if USE_CUDA else model
 
-def train(model, PAD_INDEX, train_iter, valid_iter, SRC, TRG, num_epochs=10, lr=0.0003, print_every=100):
+def train(model, PAD_INDEX, train_iter, valid_iter, src_vocab, trg_vocab, num_epochs=10, lr=0.0003, print_every=100):
     """Train a model on our Data"""
 
     if USE_CUDA:
@@ -510,12 +510,9 @@ def train(model, PAD_INDEX, train_iter, valid_iter, SRC, TRG, num_epochs=10, lr=
 
         model.eval()
         with torch.no_grad():
-            print_examples((rebatch(PAD_INDEX, x) for x in valid_iter),
-                           model, n=3, src_vocab=SRC.vocab, trg_vocab=TRG.vocab)
+            print_examples((rebatch(PAD_INDEX, x) for x in valid_iter), model, n=3, src_vocab=src_vocab, trg_vocab=trg_vocab)
 
-            dev_perplexity = run_epoch((rebatch(PAD_INDEX, b) for b in valid_iter),
-                                       model,
-                                       SimpleLossCompute(model.generator, criterion, None))
+            dev_perplexity = run_epoch((rebatch(PAD_INDEX, b) for b in valid_iter), model, SimpleLossCompute(model.generator, criterion, None))
             print("Validation perplexity: %f" % dev_perplexity)
             dev_perplexities.append(dev_perplexity)
 

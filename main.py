@@ -37,20 +37,10 @@ device.reset()
 
 vocab_file = labse_layer.resolved_object.vocab_file.asset_path.numpy()
 
-<<<<<<< HEAD
-#import tensorflow.compat.v1 as tf
-
-=======
->>>>>>> vocab and line by line
 with tf.device('/cpu:0'):
     do_lower_case = labse_layer.resolved_object.do_lower_case.numpy()
     tokenizer = bert.tokenization.FullTokenizer(vocab_file, do_lower_case)
 
-<<<<<<< HEAD
-#import tensorflow as tf
-
-=======
->>>>>>> vocab and line by line
 UNK_TOKEN = "<unk>"
 PAD_TOKEN = "<pad>"
 SOS_TOKEN = "<s>"
@@ -66,20 +56,6 @@ NORMALIZED = data.Field(tokenize=tokenize_kz_normalized, batch_first=True, lower
 MAX_LEN=25
 
 vocab_unnormalized = build_vocab('./data/train.ut', ininormer, '/home/ghost/Annotated_2/Scriptur_task/unnormalized/', 'ut')
-<<<<<<< HEAD
-vocab_normalized = build_vocab('./data/train.nt', ininormer, '/home/ghost/Annotated_2/Scriptur_task/normalized/', 'nt')
-
-def save_vocab(vocab, path):
-    import pickle
-    output = open(path, 'wb')
-    pickle.dump(vocab, output)
-    output.close()
-
-
-#print("VOCAB_FILE", vocab_file)
-#src_dataset = CustomTextDataset(vocab, 'train.ut', './data/')
-#trg_dataset = CustomTextDataset(vocab, 'train.nt', './data/')
-=======
 vocab_normalized = build_vocab('./data/train.nt', ininormer, '/home/ghost/Annotated_2/Scriptur_task/normalized/', 'nt')'''
 
 
@@ -91,7 +67,7 @@ def load_vocab(path):
     return vocab
 
 vocab_unnormalized = load_vocab('vocab_unnormalized/unnormalized_vocab.csv')
-
+vocab_normalized = load_vocab('vocab_normalized/normalized_vocab.csv')
 
 #print("VOCAB_FILE", vocab_file)
 src_dataset = CustomTextDataset(vocab, 'train.ut', './data/')
@@ -101,19 +77,31 @@ trg_dataset = CustomTextDataset(vocab, 'train.nt', './data/')
 #compression_opts = dict(method='zip', archive_name='vocab.csv')
 #df.to_csv('vocab_unnormalized/vocab.zip', index=False, compression=compression_opts)
 
-#collate_fn = Collation(vocab['<pad>'], vocab['<pad>'], vocab['<pad>'])
+collate_fn = Collation(vocab['<pad>'], vocab['<pad>'], vocab['<pad>'])
 
 
-#src_dataloader = DataLoader(src_dataset, batch_size=5, collate_fn=collate_fn)
-'''trg_dataloader = DataLoader(trg_dataset, batch_size=5, collate_fn=collate_fn)'''
+src_dataloader = DataLoader(src_dataset, batch_size=5, collate_fn=collate_fn)
+trg_dataloader = DataLoader(trg_dataset, batch_size=5, collate_fn=collate_fn)
+
+#train_iter = data.BucketIterator(src_dataloader, batch_size=5, train=True, sort_within_batch=True,
+#                                 sort_key=lambda x: (len(x.src), len(x.trg)), repeat=False, 
+#                                 device=DEVICE)
+
+#device = cuda.get_current_device()
+#device.reset()
+
+model = make_model(len(UNNORMALIZED.vocab), len(NORMALIZED.vocab),
+                   emb_size=256, hidden_size=256,
+                   num_layers=1, dropout=0.2)
+
+src_dataset_valid = CustomTextDataset(vocab, 'train.ut', './data/')
+trg_dataset_valid = CustomTextDataset(vocab, 'train.nt', './data/')
 
 
+dev_perplexities = train(model, PAD_INDEX, train_iter, valid_iter, UNNORMALIZED, NORMALIZED, print_every=10)
 
-
-from torchtext.datasets import TranslationDataset
 
 '''from torchtext.datasets import TranslationDataset
->>>>>>> vocab and line by line
 
 text_dataset = TranslationDataset(path='./data/', exts=('train.ut', 'train.nt'), fields=(UNNORMALIZED, NORMALIZED))
 

@@ -1,5 +1,6 @@
 from torch.utils.data import Dataset
 import pandas as pd
+from model import   BahdanauAttention, Batch, run_epoch, SimpleLossCompute, train, print_data_info, Generator
 
 class CustomTextDataset(Dataset):
     def __init__(self, vocab, split_csv_path, text_dir):
@@ -34,7 +35,7 @@ class Collation():
         batch: list of size batch_size where each element is a tuple of unnormalized_text: torch.int32 and normalized_text: torch.int32].
         """
         input_lengths, ids_sorted_decreasing = torch.sort(
-            torch.LongTensor([x[0].size for x in batch]),  ## check .size !!! maybe len
+            torch.LongTensor([batch.src_size for x in batch]),  ## check .size !!! maybe len
             dim=0, descending=True)
         max_input_len = input_lengths[0]
 

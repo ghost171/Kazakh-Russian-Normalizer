@@ -15,23 +15,30 @@ def default_data_creator(filepath, data_folder, ext):
     #answer = dict()
     with io.open(filepath, encoding="utf8") as f:
         for i, string_ in enumerate(f):
-
-            name = "sample_" + str("%10.7o"% i) + '.' + ext
+            
+            name = "sample_" + str("%0.7o"% i) + '.' + ext
             with open(data_folder + name, 'w') as file:
                 file.write(string_)
             #answer[i] = string_
 
     #return answer
 
+def tokenize_sentences(text, tokenizer):
+    answer = []
+    for tok in tokenizer.tokenize(text):
+        answer.append(tok)
+    return answer
+
 def tokenized_data_creator(filepath, data_folder, ext, ininormer):
     with io.open(filepath, encoding="utf8") as f:
         for i, string_ in enumerate(f):
-            name = "sample_" + str("%10.7o" % i) + '.' + ext
+            name = "sample_" + str("%0.7o" % i) + '.' + ext
             with open(data_folder + name, 'w') as file:
-                file.write(ininormer(string_))
+                print(ininormer(string_))
+                file.write(tokenize_sentences(ininormer(string_)))
 
-default_data_creator('./data/train.ut', '/home/ghost/Annotated_2/Scriptur_task/data_splitted_to_sentences/row/unnormalized/', 'ut')
-default_data_creator('./data/train.nt', '/home/ghost/Annotated_2/Scriptur_task/data_splitted_to_sentences/row/normalized/', 'nt')
+default_data_creator('./data/train.ut', '/home/ghost/Kazakh-Russian-Normalizer/Scriptur_task/data_splitted_to_sentences/row/unnormalized/', 'ut')
+default_data_creator('./data/train.nt', '/home/ghost/Kazakh-Russian-Normalizer/Scriptur_task/data_splitted_to_sentences/row/normalized/', 'nt')
 
 USE_CUDA = torch.cuda.is_available()
 DEVICE=torch.device('cuda') # or set to 'cpu'
@@ -54,6 +61,6 @@ with tf.device('/cpu:0'):
     do_lower_case = labse_layer.resolved_object.do_lower_case.numpy()
     tokenizer = bert.tokenization.FullTokenizer(vocab_file, do_lower_case)
 
-tokenized_data_creator('./data/train.ut', '/home/ghost/Annotated_2/Scriptur_task/data_splitted_to_sentences/tokenized/unnormalized/', 'ut', tokenizer)
-default_data_creator('./data/train.nt', '/home/ghost/Annotated_2/Scriptur_task/data_splitted_to_sentences/tokenized/normalized/', 'nt', tokenizer)
+#tokenized_data_creator('./data/train.ut', '/home/ghost/Annotated_3/Kazakh-Russian-Normalizer/data_splitted_to_sentences/tokenized/unnormalized/', 'ut', tokenizer)
+#default_data_creator('./data/train.nt', '/home/ghost/Annotated_3/Kazakh-Russian-Normalizer/data_splitted_to_sentences/tokenized/normalized/', 'nt', tokenizer)
 

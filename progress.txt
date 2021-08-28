@@ -1,15 +1,10 @@
 August 20
-<<<<<<< HEAD
-=======
 
->>>>>>> vocab and line by line
 delete excess libs
 filelist.csv
 save texts in appropriate files
 vocabulary creation and save it to json
 input, output sizes
-<<<<<<< HEAD
-=======
 
 August 21
 
@@ -24,4 +19,3 @@ change to_csv to for loop.
 vocabulary as json
 
 
->>>>>>> vocab and line by line

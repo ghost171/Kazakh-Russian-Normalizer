@@ -8,6 +8,7 @@ from get_model_for_tokenization import get_model
 from numba import cuda
 import torch
 import io
+import csv
 
 def create_input(input_strings, tokenizer, max_seq_length):
 
@@ -45,8 +46,10 @@ def build_vocab(path_of_dataset, data_folder, ext, tokenizer, labse_model):
     #counter = Counter()
     all_dataset_vocab = []
     index_for_vocab = 0
-    all_dataset_vocab = torch.tensor(all_dataset_vocab)
-    all_dataset_vocab = all_dataset_vocab.to('cuda')
+    all_dataset_vocab_embedded = []
+    values = []
+    #all_dataset_vocab = torch.tensor(all_dataset_vocab)
+    #all_dataset_vocab.to('cuda')
 
     with io.open(path_of_dataset, encoding="utf8") as f:
         print("BUILD VOCAB 1")
@@ -55,26 +58,36 @@ def build_vocab(path_of_dataset, data_folder, ext, tokenizer, labse_model):
             #name = "sample_" + str("%10.7o"% i) + '.' + ext
             #with open(data_folder + name, 'w') as f:
             #    f.write(string_)
-
+            if i == 3:
+                break
             tokenized = tokenize_sentences(string_, tokenizer) 
 
             #vocab_file = open(path_for_recording_vocab, "w")
             #writer = csv.writer(vocab_file)
-            print("TOKENIZED", tokenized)
-            print(tokenized)
+            #print("TOKENIZED", tokenized)
+            #print(tokenized)
             embedded = encode(tokenized, tokenizer, labse_model)
-            embedded_tensor = tf.convert_to_tensor(embedded.numpy(), dtype=None, dtype_hint=None, name=None)
-            print(embedded_tensor)
-            embedded_tensor = embedded_tensor.to('cuda')
-            for value in embedded_tensor:
-                if value not in all_dataset_vocab:
+            #embedded_tensor = tf.convert_to_tensor(embedded.numpy(), dtype=None, dtype_hint=None, name=None)
+            #print("EMBEDDED", embedded)
+            #print(type(embedded))
+            embedded = embedded.numpy()
+            #print(type(embedded))
+            #embedded_tensor = embedded_tensor.to('cuda')
+            for i, value in enumerate(tokenized):
+                print("ALL DATASET VOCAB")
+                #print(all_dataset_vocab)
+                print("ALL DATASET VOCAB")
+                if value not in values:
+                    print("ALL DATASET VOCAB", all_dataset_vocab)
                     index_for_vocab += 1
                     all_dataset_vocab.append([index_for_vocab, value])
+                    all_dataset_vocab_embedded.append([index_for_vocab, embedded[i]])
+                    values.append(value)
 
-    return all_dataset_vocab
+    return all_dataset_vocab, all_dataset_vocab_embedded
 
 def save_vocab(vocab, path):
-    with io.open(path, encoding="utf8") as f:
+    with io.open(path, 'w', encoding="utf8") as f:
         writer = csv.writer(f)
         for key, value in vocab:
             writer.writerow([key, value])
@@ -103,13 +116,18 @@ do_lower_case = labse_layer.resolved_object.do_lower_case.numpy()
 tokenizer = bert.tokenization.FullTokenizer(vocab_file, do_lower_case)
 
 print("BUILD VOCAB")
-vocab_unnormalized = build_vocab('./data/train.ut', '/home/ghost17/Annotated_3/Kazakh-Russian-Normalizer/unnormalized/', 'ut', tokenizer, labse_model)
-vocab_normalized = build_vocab('./data/train.nt', '/home/ghost17/Annotated_3/Kazakh-Russian-Normalizer/normalized/', 'nt', tokenizer, labse_model)
+vocab_unnormalized, vocab_unnormalized_embedded = build_vocab('./data/train.ut', '/home/ghost17/Annotated_3/Kazakh-Russian-Normalizer/unnormalized/', 'ut', tokenizer, labse_model)
+vocab_normalized, vocab_normalized_embedded = build_vocab('./data/train.nt', '/home/ghost17/Annotated_3/Kazakh-Russian-Normalizer/normalized/', 'nt', tokenizer, labse_model)
 print("BUILD VOCAB")
-print("NORMALIZED", vocab_normalized)
-print("UNNORMALIZED", vocab_unnormalized)
+#print("NORMALIZED", vocab_normalized)
+#print("UNNORMALIZED", vocab_unnormalized)
 
 print("VOCAB")
-save_vocab(vocab_normalized, 'vocab_unnormalized/vocab_unnormalized.csv')
+save_vocab(vocab_unnormalized, 'vocab_unnormalized/vocab_unnormalized.csv')
+print("VOCAB")
+save_vocab(vocab_unnormalized_embedded, 'vocab_unnormalized/vocab_unnormalized_embedded.csv')
 print("VOCAB")
 save_vocab(vocab_normalized, 'vocab_normalized/vocab_normalized.csv')
+print("VOCAB")
+save_vocab(vocab_normalized_embedded, 'vocab_normalized/vocab_normalized_embedded.csv')
+

@@ -4,8 +4,6 @@
 /all_texts
 out_final.csv
 /all_texts_csv
-<<<<<<< HEAD
-=======
 /rule_based_normalizer/all_texts
 /data/train.nt
 /data/train.ut
@@ -21,7 +19,7 @@ out_final.tsv
 /unnormalized
 /vocab_normalized
 /rule_based_normalizer
-data_splitted_to_sentences
-
->>>>>>> vocab and line by line
-
+/vocab_unnormalized
+/vocab_normalized
+/vocab_unnormzlied
+/normalized

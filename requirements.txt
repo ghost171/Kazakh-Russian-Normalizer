@@ -1,0 +1,10 @@
+numpy
+pandas
+tqdm
+tensorflow
+torch
+bert
+scikit-learn
+transliterate
+jupyterlab
+-e ./num2word

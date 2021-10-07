@@ -2,8 +2,10 @@ numpy
 pandas
 tqdm
 tensorflow
+tensorflow_hub
+numba
 torch
-bert
+bert-tensorflow
 scikit-learn
 transliterate
 jupyterlab

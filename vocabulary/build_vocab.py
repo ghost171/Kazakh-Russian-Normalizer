@@ -1,16 +1,13 @@
-print("import")
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+
 import pandas as pd
 import numpy as np
-import numba
-from pandas.core.frame import DataFrame
 
 import tensorflow as tf
 import tensorflow_hub as hub
 import torch
-
 import bert
-from bert import tokenization
-print("import")
 
 def create_input(input_strings, tokenizer, max_seq_length):
 
@@ -64,8 +61,8 @@ def get_LABSE(model_url, max_seq_length):
     return labse_model, labse_layer
 
 USE_CUDA = torch.cuda.is_available()
-DEVICE = torch.device('cuda:0') # or set to 'cpu'
-print("USE_CUDA      ", USE_CUDA)
+DEVICE = torch.device('cuda') # or set to 'cpu'
+print("USE_CUDA", USE_CUDA)
 
 seed = 42
 np.random.seed(seed)
@@ -83,19 +80,8 @@ print('Loaded models!')
 df_train = pd.read_csv('filelists/train_filelists.csv')
 df_val = pd.read_csv('filelists/val_filelists.csv')
 df_test = pd.read_csv('filelists/test_filelists.csv')
-df_test.rename(columns={'sentence_1090448.txt' : 'filenames'}, inplace=True)
-df_train.rename(columns={'sentence_2844600.txt' : 'filenames'}, inplace=True)
-df_val.rename(columns={'sentence_1090448.txt' : 'filenames'}, inplace=True)
 
-df =  pd.concat([df_test, df_val])
-df = pd.concat([df, df_train])
-
-print("DF")
-print(df)
-print(df.size)
-print("DF")
-
-print('Loaded df')
+df = pd.concat([df_train, df_val, df_test])
 
 filenames = df['filenames'].to_list()
 #unnormalized texts
@@ -104,18 +90,23 @@ input_folder_name = f'data/raw/{data_label}/'
 tokenized_folder_name = f'data/tokenized/{data_label}/'
 embedded_folder_name = f'data/embedded/{data_label}/'
 
+if not os.path.exists(tokenized_folder_name):
+    os.makedirs(tokenized_folder_name)
+
+if not os.path.exists(embedded_folder_name):
+    os.makedirs(embedded_folder_name)
+
 vocab_unnormalized = set()
-print('Started')
-iteration = 0
-print(len(filenames))
+# iteration = 0
+
 for filename in filenames:
-    iteration += 1
+    # iteration += 1
     with open(input_folder_name + filename, 'r') as f:
         sentence = f.readline()
-    if iteration == 707:
-        print("SENTENCE 707            ", sentence)
-    if iteration == 2203 or iteration==2202 or (iteration >= 2206 and iteration <=2220):
-        print("SENTENCE ", sentence)
+    # if iteration == 707:
+    #     print("SENTENCE 707            ", sentence)
+    # if iteration == 2203 or iteration==2202 or (iteration >= 2206 and iteration <=2220):
+    #     print("SENTENCE ", sentence)
     tokens = tokenizer.tokenize(sentence)
     embeddings = encode(tokens, tokenizer, labse_model)
     with open(tokenized_folder_name + filename, 'w') as f:
@@ -126,7 +117,7 @@ for filename in filenames:
     #with open(embedded_folder_name + filename, 'w') as f:
        #[f.write(embedding.numpy()) for embedding in embeddings]
        #f.close()
-    print("ITERATION!          ", iteration)
+    # print("ITERATION!          ", iteration)
     vocab_unnormalized = vocab_unnormalized.union(set(tokens))
 
 
@@ -137,9 +128,6 @@ tokenized_folder_name = f'data/tokenized/{data_label}/'
 embedded_folder_name = f'data/embedded/{data_label}/'
 
 vocab_normalized = set()
-print('Started')
-
-print("WRITING")
 
 iteration = 0
 for filename in filenames:
@@ -157,15 +145,20 @@ for filename in filenames:
     #with open(embedded_folder_name + filename, 'w') as f:
     #   [f.write(embedding.numpy()) for embedding in embeddings]
     #   f.close()
-
-
-    print("ITERATION 2!           ", iteration)
+    #
+    #
+    # print("ITERATION 2!           ", iteration)
     vocab_normalized = vocab_normalized.union(set(tokens))
 
 vocab_unnormalized = [(i, value) for i, value in enumerate(vocab_unnormalized)]
 vocab_normalized = [(i, value) for i, value in enumerate(vocab_normalized)]
 
-print("WRITING")
+
+if not os.path.exists('data/vocab_unnormalized/'):
+    os.makedirs('data/vocab_unnormalized/')
+
+if not os.path.exists('data/vocab_normalized/'):
+    os.makedirs('data/vocab_normalized/')
 
 with open('data/vocab_unnormalized/vocab_unnormalized.txt', 'w') as f:
     for token in vocab_unnormalized:
@@ -176,11 +169,11 @@ with open('data/vocab_normalized/vocab_normalized.txt', 'w') as f:
         print("TOKEN", token[0])
         [f.write(str(token[0]) + ", " + str(token[1]) + "\n")]
 
-print("WRITING")
-
-print("VOCAB UNNORMALIZED")
-print(vocab_unnormalized)
-print("VOCAB UNNORMALIZED")
-print("VOCAB NORMALIZED")
-print(vocab_normalized)
-print("VOCAB NORMALIZED")
+# print("WRITING")
+#
+# print("VOCAB UNNORMALIZED")
+# print(vocab_unnormalized)
+# print("VOCAB UNNORMALIZED")
+# print("VOCAB NORMALIZED")
+# print(vocab_normalized)
+# print("VOCAB NORMALIZED")

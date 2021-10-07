@@ -1,82 +1,47 @@
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1" # SET TO 0
 
 import pandas as pd
 import numpy as np
 
-import tensorflow as tf
-import tensorflow_hub as hub
 import torch
-import bert
+from transformers import BertTokenizer, BertModel
 
-def create_input(input_strings, tokenizer, max_seq_length):
+device = 'cuda' # or set to 'cpu'
 
-    input_ids_all, input_mask_all, segment_ids_all = [], [], []
-    for input_string in input_strings:
-        # Tokenize input.
-        input_tokens = ["[CLS]"] + tokenizer.tokenize(input_string) + ["[SEP]"]
-        input_ids = tokenizer.convert_tokens_to_ids(input_tokens)
-        sequence_length = min(len(input_ids), max_seq_length)
+tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased')
+model = BertModel.from_pretrained('bert-base-multilingual-cased').eval().to(device)
 
-        # Padding or truncation.
-        if len(input_ids) >= max_seq_length:
-            input_ids = input_ids[:max_seq_length]
-        else:
-            input_ids = input_ids + [0] * (max_seq_length - len(input_ids))
 
-        input_mask = [1] * sequence_length + [0] * (max_seq_length - sequence_length)
+def get_embeddings(text, bert_model, tokenizer, device):
 
-        input_ids_all.append(input_ids)
-        input_mask_all.append(input_mask)
-        segment_ids_all.append([0] * max_seq_length)
+    marked_text = tokenizer.decode(tokenizer(text).input_ids)
+    tokenized_text = tokenizer.tokenize(marked_text)
+    #print(f'The length of tokens is {len(tokenized_text)}')
+    segments_ids = [1] * len(tokenized_text)
+    indexed_tokens = tokenizer.convert_tokens_to_ids(tokenized_text)
+    tokens_tensor = torch.tensor([indexed_tokens]).to(device)
+    segments_tensors = torch.tensor([segments_ids]).to(device)
 
-    return np.array(input_ids_all), np.array(input_mask_all), np.array(segment_ids_all)
+    with torch.no_grad():
+        outputs = bert_model(tokens_tensor, segments_tensors)
+        hidden_states = outputs[2]
 
-def encode(input_text, tokenizer, labse_model, max_seq_length=60):
-    input_ids, input_mask, segment_ids = create_input(input_text, tokenizer, max_seq_length)
-    return labse_model([input_ids, input_mask, segment_ids])
+    token_embeddings = torch.stack(hidden_states, dim=0)
+    token_embeddings = torch.squeeze(token_embeddings, dim=1)
 
-def get_LABSE(model_url, max_seq_length):
-    labse_layer = hub.KerasLayer(model_url, trainable=False)
+    token_vecs_sum = [] # final embeddings from BERT
 
-    # Define input.
-    input_word_ids = tf.keras.layers.Input(shape=(max_seq_length,), dtype=tf.int32,
-                                             name="input_word_ids")
-    input_mask = tf.keras.layers.Input(shape=(max_seq_length,), dtype=tf.int32,
-                                     name="input_mask")
-    segment_ids = tf.keras.layers.Input(shape=(max_seq_length,), dtype=tf.int32,
-                                          name="segment_ids")
+    for token in token_embeddings.transpose(1, 0):
+        sum_vec = torch.sum(token[-4:], dim=0).to(device)
+        token_vecs_sum.append(sum_vec)
 
-    #LaBSE layer.
-    pooled_output, _ = labse_layer([input_word_ids, input_mask, segment_ids])
+    return tokenized_text, token_vecs_sum
 
-    # The embedding is l2 normalized.
-    pooled_output = tf.keras.layers.Lambda(
-        lambda x: tf.nn.l2_normalize(x, axis=1))(pooled_output)
+text = 'Сәлем, сенің атың кім?'
 
-    # Define model.
-    labse_model = tf.keras.Model(
-    inputs=[input_word_ids, input_mask, segment_ids],
-    outputs=pooled_output)
-    return labse_model, labse_layer
+tokenized_text, embeddings = get_embeddings(text, model, tokenizer, device)
 
-USE_CUDA = torch.cuda.is_available()
-DEVICE = torch.device('cuda') # or set to 'cpu'
-print("USE_CUDA", USE_CUDA)
-
-seed = 42
-np.random.seed(seed)
-torch.manual_seed(seed)
-torch.cuda.manual_seed(seed)
-
-max_seq_length = 60
-labse_model, labse_layer = get_LABSE(model_url="https://tfhub.dev/google/LaBSE/1", max_seq_length=max_seq_length)
-
-vocab_file = labse_layer.resolved_object.vocab_file.asset_path.numpy()
-
-do_lower_case = labse_layer.resolved_object.do_lower_case.numpy()
-tokenizer = bert.tokenization.FullTokenizer(vocab_file, do_lower_case)
-print('Loaded models!')
 df_train = pd.read_csv('filelists/train_filelists.csv')
 df_val = pd.read_csv('filelists/val_filelists.csv')
 df_test = pd.read_csv('filelists/test_filelists.csv')
@@ -107,8 +72,8 @@ for filename in filenames:
     #     print("SENTENCE 707            ", sentence)
     # if iteration == 2203 or iteration==2202 or (iteration >= 2206 and iteration <=2220):
     #     print("SENTENCE ", sentence)
-    tokens = tokenizer.tokenize(sentence)
-    embeddings = encode(tokens, tokenizer, labse_model)
+    tokens, embeddings = get_embeddings(text, model, tokenizer, device)
+
     with open(tokenized_folder_name + filename, 'w') as f:
         [f.write(token) and f.write('\n') for token in tokens]
         f.close()

@@ -9,4 +9,5 @@ bert-tensorflow
 scikit-learn
 transliterate
 jupyterlab
+transformers
 -e ./num2word

@@ -29,7 +29,7 @@ def split_point_list(data, point_of_split):
 def splitter(text):
     start = 0
     sentences = []
-    for i in re.finditer(f"[\.?!;][\[\]\(\)'\"«»—]*\s*[0-9\[\]\(\)'\"«»—]*[ЁІАБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯҒҚҢҮҰҺӘӨ]",
+    for i in re.finditer(f"[\.?!;][\[\]\(\)'\"«"»—]*\s*[0-9\[\]\(\)'\"«»—]*[ЁІАБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯҒҚҢҮҰҺӘӨ]",
                          text):
         end = i.start() + 1
         sentences.append(text[start:end].strip())

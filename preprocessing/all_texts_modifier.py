@@ -1,12 +1,8 @@
 from tqdm import tqdm
 import re
 
-kazakh_capital_letters = ['Ә', 'Ғ', 'Қ', 'Ң', 'Ө', 'Ұ', 'Ү', 'Һ', 'І', 'Й', 'Ц', 'У', 'К', 'Е', 'Н', 'Г', 'Ш', 'Щ', 'З', 'Х', 'Ф' , 'Ы', 'В', 'А', 'П', 'Р', 'О', 'Л', 'Д', 'Ж', 'Э', 'Я', 'Ч', 'С', 'М', 'И', 'Т', 'Б', 'Ю']
-kazakh_common_letters = ['а', 'ә', 'б', 'в', 'г', 'ғ', 'д','е','ё','ж','з','и','й','к','қ','л','м','н','ң','о','ө','п','р','с','т','у','ұ','ү','ф','х','һ','ц','ч','ш','щ','ъ','ы','і','ь','э','ю','я']
-
-filenames_sentences = open('data/sents_Yerzhan.txt', 'r', errors='ignore')
-lines = filenames_sentences.readlines()
-file_sentences_modified = 'data/sentences_modified.txt'
+def symbols_cleaner(text):
+    return re.sub(r'['+chars_unwanted+']', '', text)
 
 def split_point(data, point_of_split):
     result = []
@@ -19,9 +15,6 @@ def split_point_list(data, point_of_split):
         result.extend(elem.split(point_of_split))        
     return result
 
-
-import re
-
 def splitter(text):
     start = 0
     sents = []
@@ -33,44 +26,38 @@ def splitter(text):
     sents = [s for s in sents if s and s != '\n']
     return sents
 
+def iterate_through_lines(text):
+    return iter(text.splitlines())
 
-#print(splitter(example))
+kazakh_capital_letters = ['Ә', 'Ғ', 'Қ', 'Ң', 'Ө', 'Ұ', 'Ү', 'Һ', 'І', 'Й', 'Ц', 'У', 'К', 'Е', 'Н', 'Г', 'Ш', 'Щ', 'З', 'Х', 'Ф' , 'Ы', 'В', 'А', 'П', 'Р', 'О', 'Л', 'Д', 'Ж', 'Э', 'Я', 'Ч', 'С', 'М', 'И', 'Т', 'Б', 'Ю']
+kazakh_common_letters = ['а', 'ә', 'б', 'в', 'г', 'ғ', 'д','е','ё','ж','з','и','й','к','қ','л','м','н','ң','о','ө','п','р','с','т','у','ұ','ү','ф','х','һ','ц','ч','ш','щ','ъ','ы','і','ь','э','ю','я']
 
-'''example_modified = ''
-for index, letter in enumerate(example):
-    if letter in kazakh_capital_letters and example[index - 1] in kazakh_common_letters:
-        example_modified += ". "
-        example_modified += letter
-        print("ZAHODIT")
-    else:
-        example_modified += letter
+filenames_sentences = open('data/sentences_original.txt', 'r', errors='ignore')
+lines = filenames_sentences.readlines()
+file_sentences_modified = 'data/sentences_modified.txt'
 
-#print(example_modified)
+filenames_sentences_1 = open('data/sentences_original.txt', 'r', errors='ignore')
 
-sentences_1 = split_point(example_modified, ". ")
-sentences_2 = split_point_list(sentences_1, "! ")
-sentences_3 = split_point_list(sentences_2, "? ")
+train_texts_all = filenames_sentences_1.read()
 
-print(sentences_3)'''
+unique_symbols = set(train_texts_all)
 
-'''lines_modified = []
-for i, line in tqdm(enumerate(lines)):
-    line_modified = ''
-    for index, letter in enumerate(line):
-        if letter in kazakh_capital_letters and line[index - 1] in kazakh_common_letters:
-            line_modified += '. '
-            line_modified += letter
-        else:
-            line_modified += letter
-        
-    lines_modified.append(line_modified)'''
+kaz_letters_str = set('әіңғүұқөһйцукенгшщзхъфывапролджэячсмитьбюё')
+en_letters = set('qwertyuiopasdfghjklzxcvbnm')
+numbers = set('0123456789')
+special_symbols = set("%-',.*() ")
 
-print("LINES")
-print(len(lines))
-print("LINES")
+symbols_to_be_deleted = unique_symbols.difference(set.union(kaz_letters_str, en_letters, numbers, special_symbols))
+
+symbols_to_be_deleted_ = ''.join(list(symbols_to_be_deleted))
+print(f'These symbols are to be removed from the dataset: {symbols_to_be_deleted_}') # these symbols are to be deleted from texts
+
+chars_unwanted = re.escape(symbols_to_be_deleted_)
 
 with open(file_sentences_modified, 'w') as fsm: 
+
     for i, line in tqdm(enumerate(lines)):
-        sentences_1 = splitter(line)
+        sentence = symbols_cleaner(line)
+        sentences_1 = splitter(sentence)
         for sentence in sentences_1:
             fsm.write(sentence + '\n')

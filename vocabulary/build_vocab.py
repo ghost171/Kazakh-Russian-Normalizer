@@ -1,5 +1,5 @@
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "1" # SET TO 0
+os.environ["CUDA_VISIBLE_DEVICES"] = "0" # SET TO 0
 
 import pandas as pd
 import numpy as np
@@ -25,13 +25,14 @@ def get_embeddings(text, bert_model, tokenizer, device):
 
     with torch.no_grad():
         outputs = bert_model(tokens_tensor, segments_tensors)
-        hidden_states = outputs[2]
+        #print("outputs: ", outputs)
+        hidden_states = outputs[:1]
 
     token_embeddings = torch.stack(hidden_states, dim=0)
     token_embeddings = torch.squeeze(token_embeddings, dim=1)
 
-    token_vecs_sum = [] # final embeddings from BERT
 
+    token_vecs_sum = [] # final embeddings from BERT
     for token in token_embeddings.transpose(1, 0):
         sum_vec = torch.sum(token[-4:], dim=0).to(device)
         token_vecs_sum.append(sum_vec)
@@ -42,7 +43,10 @@ text = 'Сәлем, сенің атың кім?'
 
 tokenized_text, embeddings = get_embeddings(text, model, tokenizer, device)
 
-df_train = pd.read_csv('filelists/train_filelists.csv')
+print("Tokenized text: ", tokenized_text)
+print("Embeddings: ", embeddings)
+
+'''df_train = pd.read_csv('filelists/train_filelists.csv')
 df_val = pd.read_csv('filelists/val_filelists.csv')
 df_test = pd.read_csv('filelists/test_filelists.csv')
 
@@ -90,7 +94,7 @@ iteration = 0
 data_label = 'normalized'
 input_folder_name = f'data/raw/{data_label}/'
 tokenized_folder_name = f'data/tokenized/{data_label}/'
-embedded_folder_name = f'data/embedded/{data_label}/'
+embedded_folder_name = f'data/embedded/{data_label}/'0
 
 vocab_normalized = set()
 
@@ -141,4 +145,4 @@ with open('data/vocab_normalized/vocab_normalized.txt', 'w') as f:
 # print("VOCAB UNNORMALIZED")
 # print("VOCAB NORMALIZED")
 # print(vocab_normalized)
-# print("VOCAB NORMALIZED")
+# print("VOCAB NORMALIZED")'''
